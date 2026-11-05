@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <title>Yasher System | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Подключение Web SDK РСЯ -->
+    <script>window.yaContextCb=window.yaContextCb||[]</script>
+    <script src="https://yandex.ru/ads/system/context.js" async></script>
+
+    <style>
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2322c55e' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .yasher-card { 
+            background: rgba(30, 41, 59, 0.7); 
+            backdrop-filter: blur(16px);
+            border-radius: 20px; 
+            border: 1px solid rgba(34, 197, 94, 0.15); 
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(34, 197, 94, 0.02); 
+        }
+        .yasher-btn { 
+            background: linear-gradient(135deg, #16a34a, #22c55e); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            box-shadow: 0 4px 15px -3px rgba(34, 197, 94, 0.3);
+        }
+        .yasher-btn:hover { 
+            background: linear-gradient(135deg, #15803d, #16a34a); 
+            transform: translateY(-2px) scale(1.02); 
+            box-shadow: 0 10px 25px -3px rgba(34, 197, 94, 0.5); 
+        }
+        
+        .btn-res { 
+            transition: all 0.2s; 
+            padding: 8px 4px; 
+            border-radius: 8px; 
+            font-weight: 900; 
+            font-size: 9px; 
+            color: white;
+            text-transform: uppercase;
+            cursor: pointer;
+            letter-spacing: 0.02em;
+            text-align: center;
+        }
+        @media (min-width: 640px) {
+            .btn-res { padding: 10px 16px; font-size: 11px; border-radius: 10px; letter-spacing: 0.05em; }
+        }
+        .btn-res:hover { transform: scale(1.05); filter: brightness(1.2); }
+        .btn-res:active { transform: scale(0.95); }
+
+        #loadingOverlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9); z-index: 100; backdrop-filter: blur(8px); }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        input {
+            background: rgba(15, 23, 42, 0.6) !important;
+            color: #f8fafc !important;
+            border-color: rgba(51, 65, 85, 0.8) !important;
+        }
+        input:focus {
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2) !important;
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #16a34a; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="p-4 md:p-8 lg:p-12 min-h-screen">
+
+    <div id="loadingOverlay" class="flex items-center justify-center">
+        <div class="text-center">
+            <div class="w-14 h-14 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p class="mt-4 font-bold text-slate-500 uppercase text-[10px] tracking-[0.3em]">Обновление данных...</p>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+            <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+                <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center text-white text-3xl font-black shadow-lg shrink-0">Y</div>
+                        <div>
+                            <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-[0_0_10px_rgba(34,197,94,0.3)]">YASHER <span class="text-green-500">SYSTEM</span></h1>
+                            <p class="text-[10px] font-bold text-green-500/70 uppercase tracking-widest">Loodstvo</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="relative w-full sm:w-auto">
+                    <select id="userSelect" onchange="changeUser()" class="appearance-none bg-slate-800/80 border border-green-500/30 text-white font-bold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-green-500 transition-all w-full sm:w-auto cursor-pointer shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+                        <option value="">Загрузка...</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-green-500">
+                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex gap-3 sm:gap-4 w-full md:w-auto items-center">
+                <div class="yasher-card flex-1 md:flex-none px-3 sm:px-8 py-3 sm:py-4 text-center min-w-[120px] sm:min-w-[160px]">
+                    <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase mb-1">Доступно (Bank)</p>
+                    <p id="currentBalance" class="text-lg sm:text-2xl font-black text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">0 ₽</p>
+                </div>
+                <div class="yasher-card flex-1 md:flex-none px-3 sm:px-8 py-3 sm:py-4 text-center border-green-500/30 bg-green-500/10 min-w-[90px] sm:min-w-[120px]">
+                    <p class="text-[9px] sm:text-[10px] font-bold text-green-400 uppercase mb-1">ROI %</p>
+                    <p id="currentROI" class="text-lg sm:text-2xl font-black text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">0%</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Form Side -->
+            <div class="lg:col-span-4">
+                <div class="yasher-card p-4 sm:p-8 sticky top-8">
+                    <h2 class="text-xs font-black text-green-500/80 uppercase tracking-widest mb-4 sm:mb-6 border-b border-slate-700/50 pb-2">Новая ставка</h2>
+                    <form id="betForm" class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Матч</label>
+                            <input type="text" id="match" placeholder="Челси - Бавария" class="w-full p-4 text-base sm:text-sm border border-slate-200 rounded-xl outline-none focus:border-green-500 font-bold transition-all" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Событие</label>
+                            <input type="text" id="event" list="event-options" placeholder="Тотал Б 2.5" class="w-full p-4 text-base sm:text-sm border border-slate-200 rounded-xl outline-none focus:border-green-500 font-bold transition-all" required>
+                            <datalist id="event-options">
+                                <!-- Опции генерируются автоматически через JS -->
+                            </datalist>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Коэфф.</label>
+                                <input type="number" id="odds" step="0.01" placeholder="1.80" class="w-full p-4 text-base sm:text-sm border border-slate-200 rounded-xl outline-none focus:border-green-500 font-bold" required>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Сумма (₽)</label>
+                                <input type="number" id="amount" placeholder="30" class="w-full p-4 text-base sm:text-sm border border-slate-200 rounded-xl outline-none focus:border-green-500 font-black text-green-700" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full yasher-btn text-white font-black py-5 rounded-xl uppercase text-xs tracking-widest mt-2 flex items-center justify-center gap-2 group">
+                            Сделать ставку <span class="opacity-40 group-hover:opacity-100 transition-opacity text-sm">😈</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- List Side -->
+            <div class="lg:col-span-8">
+                <div class="yasher-card p-4 sm:p-8 min-h-[500px] flex flex-col">
+                    <div class="flex justify-between items-center mb-4 sm:mb-6 border-b border-slate-700/50 pb-4">
+                        <div class="flex gap-4 sm:gap-6 overflow-x-auto hide-scrollbar whitespace-nowrap w-full pr-4">
+                            <button onclick="setTab('active')" id="tab-active" class="text-xs sm:text-sm font-black uppercase tracking-widest text-green-500 border-b-2 border-green-500 pb-1 transition-all drop-shadow-[0_0_5px_rgba(34,197,94,0.5)] shrink-0">Активные</button>
+                            <button onclick="setTab('history')" id="tab-history" class="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500 hover:text-slate-300 pb-1 transition-all border-b-2 border-transparent shrink-0">История</button>
+                            <button onclick="setTab('stats')" id="tab-stats" class="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500 hover:text-slate-300 pb-1 transition-all border-b-2 border-transparent shrink-0">Статистика моего лудства</button>
+                        </div>
+                        <button onclick="refreshData()" class="p-2 text-slate-400 hover:text-green-400 transition-all bg-slate-800/50 rounded-lg border border-slate-700/50 hover:border-green-500/50 shrink-0 ml-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        </button>
+                    </div>
+
+                    <div id="betsContainer" class="space-y-4 flex-1 overflow-y-auto custom-scroll pr-2 max-h-[600px]">
+                        <!-- Контент ставок -->
+                    </div>
+                    
+                    <div id="statsContainer" class="hidden flex-1 w-full h-full min-h-[400px]">
+                        <canvas id="profitChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Адаптивный рекламный баннер РСЯ -->
+        <div class="mt-8 yasher-card p-4 text-center">
+            <div id="yandex_rtb_R-A-15494483-1"></div>
+            <script>
+                window.yaContextCb.push(() => {
+                    Ya.Context.AdvManager.render({
+                        "blockId": "R-A-15494483-1",
+                        "renderTo": "yandex_rtb_R-A-15494483-1"
+                    })
+                })
+            </script>
+        </div>
+    </div>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxWwjKCjn8YLK-2MFPqnfJDjb2nI4xGfT5pMf5EXPFBBcwu7vIIgdZOUQfE_5HFv_Ua/exec";
+        
+        let allBets = [];
+        let currentTab = 'active'; 
+        let currentBalanceNum = 0; 
+        let currentUser = ''; 
+        let profitChartInstance = null; 
+
+        const defaultEvents = ["П1", "П2", "Х", "Тотал Б 1.5", "Тотал Б 2.5", "Тотал М 2.5", "ОЗ - Да", "ОЗ - Нет"];
+
+        // Полноэкранный межстраничный рекламный блок
+        function showInterstitialAd() {
+            window.yaContextCb.push(() => {
+                Ya.Context.AdvManager.render({
+                    "blockId": "R-A-15494483-1",
+                    "type": "fullscreen"
+                })
+            })
+        }
+
+        function updateEventDatalist() {
+            const datalist = document.getElementById('event-options');
+            const historyEvents = allBets.map(bet => bet.event).filter(Boolean);
+            const uniqueEvents = [...new Set([...defaultEvents, ...historyEvents])];
+            datalist.innerHTML = uniqueEvents.map(ev => `<option value="${ev}">`).join('');
+        }
+
+        function setTab(tab) {
+            currentTab = tab;
+            const activeClass = "text-xs sm:text-sm font-black uppercase tracking-widest text-green-500 border-b-2 border-green-500 pb-1 transition-all drop-shadow-[0_0_5px_rgba(34,197,94,0.5)] shrink-0";
+            const inactiveClass = "text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500 hover:text-slate-300 pb-1 transition-all border-b-2 border-transparent shrink-0";
+            
+            document.getElementById('tab-active').className = tab === 'active' ? activeClass : inactiveClass;
+            document.getElementById('tab-history').className = tab === 'history' ? activeClass : inactiveClass;
+            document.getElementById('tab-stats').className = tab === 'stats' ? activeClass : inactiveClass;
+            
+            const betsContainer = document.getElementById('betsContainer');
+            const statsContainer = document.getElementById('statsContainer');
+
+            if (tab === 'stats') {
+                betsContainer.classList.add('hidden');
+                statsContainer.classList.remove('hidden');
+                renderChart();
+            } else {
+                betsContainer.classList.remove('hidden');
+                statsContainer.classList.add('hidden');
+                renderBets();
+            }
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('profitChart').getContext('2d');
+            const finishedBets = allBets.filter(b => b.result !== 'В процессе').sort((a, b) => a.timestamp - b.timestamp);
+            
+            let cumulativeProfit = 0;
+            const labels = [];
+            const dataPoints = [];
+
+            labels.push('Старт');
+            dataPoints.push(0);
+
+            finishedBets.forEach(bet => {
+                cumulativeProfit += (bet.profit || 0);
+                labels.push(formatDate(bet.date));
+                dataPoints.push(cumulativeProfit);
+            });
+
+            if (profitChartInstance) {
+                profitChartInstance.destroy();
+            }
+
+            const isPositive = cumulativeProfit >= 0;
+            const lineColor = isPositive ? '#22c55e' : '#ef4444'; 
+            const bgColor = isPositive ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+
+            profitChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Динамика моей наживы (Р)',
+                        data: dataPoints,
+                        borderColor: lineColor,
+                        backgroundColor: bgColor,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#0f172a',
+                        pointBorderColor: lineColor,
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#94a3b8',
+                                font: { family: 'Montserrat', weight: 'bold' }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#22c55e',
+                            titleFont: { family: 'Montserrat', weight: 'bold' },
+                            bodyFont: { family: 'Montserrat', weight: 'bold' },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y + ' ₽';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(51, 65, 85, 0.3)', drawBorder: false },
+                            ticks: { color: '#64748b', font: { family: 'Montserrat', size: 10 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(51, 65, 85, 0.3)', drawBorder: false },
+                            ticks: { color: '#64748b', font: { family: 'Montserrat', size: 10, weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function formatDate(dateStr) {
+            if (typeof dateStr === 'string' && dateStr.includes('T') && dateStr.includes('Z')) {
+                try {
+                    const date = new Date(dateStr);
+                    if (!isNaN(date.getTime())) {
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const hours = String(date.getHours()).padStart(2, '0');
+                        const minutes = String(date.getMinutes()).padStart(2, '0');
+                        return `${day}.${month} ${hours}:${minutes}`;
+                    }
+                } catch (e) {}
+            }
+            return dateStr;
+        }
+
+        async function refreshData(showLoader = true) {
+            if (showLoader) toggleLoading(true);
+            try {
+                let url = WEB_APP_URL;
+                if (currentUser) {
+                    url += `?user=${encodeURIComponent(currentUser)}`;
+                }
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const text = await response.text();
+                try {
+                    const data = JSON.parse(text);
+                    
+                    const userSelect = document.getElementById('userSelect');
+                    if (data.users && data.users.length > 0) {
+                        userSelect.innerHTML = data.users.map(u => `<option value="${u}">${u}</option>`).join('');
+                        currentUser = data.currentUser;
+                        userSelect.value = currentUser;
+                    }
+
+                    currentBalanceNum = data.balance;
+                    document.getElementById('currentBalance').innerText = currentBalanceNum.toLocaleString('ru-RU') + ' ₽';
+                    document.getElementById('currentROI').innerText = data.roi;
+
+                    const amountInput = document.getElementById('amount');
+                    if (!amountInput.value) amountInput.value = Math.floor(data.balance * 0.03);
+
+                    allBets = data.history.sort((a, b) => b.timestamp - a.timestamp);
+                    updateEventDatalist();
+                    
+                    if (currentTab === 'stats') {
+                        renderChart();
+                    } else {
+                        renderBets();
+                    }
+                } catch (parseError) {
+                    console.error("Ошибка парсинга JSON:", text);
+                    if (showLoader) alert("Ошибка: Скрипт вернул неверный формат данных.");
+                }
+            } catch (e) {
+                console.error("Ошибка сети", e);
+                if (showLoader) alert("Ошибка подключения к таблице: " + e.message);
+            } finally {
+                if (showLoader) toggleLoading(false);
+            }
+        }
+
+        function changeUser() {
+            currentUser = document.getElementById('userSelect').value;
+            refreshData(true);
+        }
+
+        async function updateStatus(row, status) {
+            const betIndex = allBets.findIndex(b => b.row === row);
+            if (betIndex !== -1) {
+                const bet = allBets[betIndex];
+                bet.result = status;
+                
+                if (status === 'Выигрыш') {
+                    bet.profit = (bet.amount * bet.odds) - bet.amount;
+                    currentBalanceNum += (bet.profit + bet.amount); 
+                } else if (status === 'Проигрыш') {
+                    bet.profit = -bet.amount;
+                } else if (status === 'Возврат') {
+                    bet.profit = 0;
+                    currentBalanceNum += bet.amount; 
+                }
+                
+                document.getElementById('currentBalance').innerText = currentBalanceNum.toLocaleString('ru-RU') + ' ₽';
+                renderBets();
+            }
+
+            try {
+                fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ action: 'update', row: row, status: status, user: currentUser })
+                }).then(() => {
+                    setTimeout(() => refreshData(false), 2000);
+                });
+            } catch (err) {
+                console.error("Ошибка фонового обновления", err);
+            }
+        }
+
+        async function deleteBet(row) {
+            if (!confirm('Вы уверены, что хотите удалить эту запись?')) return;
+
+            const betIndex = allBets.findIndex(b => b.row === row);
+            if (betIndex !== -1) {
+                const bet = allBets[betIndex];
+
+                if (bet.result === 'В процессе' || bet.result === 'Проигрыш') {
+                    currentBalanceNum += bet.amount;
+                } else if (bet.result === 'Выигрыш') {
+                    currentBalanceNum -= (bet.profit || 0);
+                }
+
+                allBets.splice(betIndex, 1);
+                document.getElementById('currentBalance').innerText = currentBalanceNum.toLocaleString('ru-RU') + ' ₽';
+                renderBets();
+            }
+
+            try {
+                fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ action: 'delete', row: row, user: currentUser })
+                }).then(() => {
+                    setTimeout(() => refreshData(false), 2000);
+                });
+            } catch (err) {
+                console.error("Ошибка фонового удаления", err);
+            }
+        }
+
+        function renderBets() {
+            const container = document.getElementById('betsContainer');
+            
+            const filteredBets = allBets.filter(item => {
+                if (currentTab === 'active') return item.result === 'В процессе';
+                return item.result !== 'В процессе'; 
+            });
+
+            if (filteredBets.length === 0) {
+                const emptyText = currentTab === 'active' ? 'Нет активных ставок' : 'История пуста';
+                container.innerHTML = `<div class="text-center py-20 text-slate-300 font-bold uppercase text-[10px] tracking-widest">${emptyText}</div>`;
+                return;
+            }
+
+            container.innerHTML = filteredBets.map(item => {
+                const isHistory = currentTab === 'history';
+                let resultBadge = '';
+                let profitText = '';
+                if (isHistory) {
+                    if (item.result === 'Выигрыш') {
+                        resultBadge = `<span class="bg-green-500/20 border border-green-500/30 text-green-400 px-3 py-1 rounded-lg text-[10px] font-black uppercase shadow-[0_0_10px_rgba(34,197,94,0.2)]">ВЫИГРЫШ</span>`;
+                        profitText = `<span class="text-green-400 font-black drop-shadow-[0_0_5px_rgba(34,197,94,0.4)]">+${item.profit} ₽</span>`;
+                    } else if (item.result === 'Проигрыш') {
+                        resultBadge = `<span class="bg-red-500/20 border border-red-500/30 text-red-400 px-3 py-1 rounded-lg text-[10px] font-black uppercase">ПРОИГРЫШ</span>`;
+                        profitText = `<span class="text-red-400 font-black">${item.profit} ₽</span>`;
+                    } else {
+                        resultBadge = `<span class="bg-slate-700/50 border border-slate-600/50 text-slate-400 px-3 py-1 rounded-lg text-[10px] font-black uppercase">ВОЗВРАТ</span>`;
+                        profitText = `<span class="text-slate-400 font-black">0 ₽</span>`;
+                    }
+                }
+
+                return `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-5 border ${isHistory ? 'border-slate-700/50 bg-slate-800/30' : 'border-green-500/30 bg-green-900/10'} rounded-2xl fade-in gap-3 sm:gap-4">
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="w-1.5 h-10 sm:h-12 ${isHistory ? (item.result === 'Выигрыш' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : item.result === 'Проигрыш' ? 'bg-red-500' : 'bg-slate-500') : 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]'} rounded-full shrink-0"></div>
+                        <div class="min-w-0">
+                            <p class="font-black text-slate-200 text-sm tracking-tight break-words">${item.match || item.event}</p>
+                            <p class="text-[11px] font-bold text-slate-400 mt-0.5">${item.event}</p>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter truncate mt-1">${formatDate(item.date)} • КФ <span class="text-green-400">${item.odds}</span></p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-start sm:items-end gap-3 w-full sm:w-auto">
+                        ${!isHistory ? `
+                        <div class="flex flex-col items-end gap-2">
+                            <div class="grid grid-cols-3 gap-1 sm:flex sm:gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                                <button onclick="updateStatus(${item.row}, 'Выигрыш')" class="btn-res bg-green-500 shadow-lg shadow-green-100/10">ВЫИГРЫШ</button>
+                                <button onclick="updateStatus(${item.row}, 'Проигрыш')" class="btn-res bg-red-500 shadow-lg shadow-red-100/10">ПРОИГРЫШ</button>
+                                <button onclick="updateStatus(${item.row}, 'Возврат')" class="btn-res bg-slate-400 shadow-lg shadow-slate-100/10">ВОЗВРАТ</button>
+                            </div>
+                            <button onclick="deleteBet(${item.row})" class="text-[9px] font-bold text-slate-500 hover:text-red-500 transition-colors flex items-center gap-1 uppercase mr-1 opacity-50 hover:opacity-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Удалить запись
+                            </button>
+                        </div>
+                        ` : `
+                        <div class="flex flex-col items-end gap-1">
+                            <div class="flex items-center gap-2">
+                                <button onclick="deleteBet(${item.row})" class="p-1.5 text-slate-500 hover:text-red-500 transition-colors" title="Удалить">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                                ${resultBadge}
+                            </div>
+                            <div class="mt-1 text-sm">${profitText}</div>
+                        </div>
+                        `}
+                        <p class="text-[10px] font-black text-slate-500 uppercase self-end">
+                            Ставка: <span class="text-slate-300">${item.amount} ₽</span>
+                        </p>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function toggleLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        document.getElementById('betForm').onsubmit = async function(e) {
+            e.preventDefault();
+            
+            const oddsValue = document.getElementById('odds').value.replace(',', '.');
+            const betData = {
+                action: 'add',
+                user: currentUser,
+                match: document.getElementById('match').value,
+                event: document.getElementById('event').value,
+                odds: parseFloat(oddsValue),
+                amount: parseFloat(document.getElementById('amount').value)
+            };
+
+            const now = new Date();
+            const tempDate = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            const newBet = {
+                row: Date.now(),
+                timestamp: Date.now(),
+                date: tempDate,
+                match: betData.match,
+                event: betData.event,
+                odds: betData.odds,
+                amount: betData.amount,
+                result: 'В процессе',
+                profit: 0
+            };
+            
+            allBets.unshift(newBet);
+            currentBalanceNum -= betData.amount;
+            
+            document.getElementById('currentBalance').innerText = currentBalanceNum.toLocaleString('ru-RU') + ' ₽';
+            updateEventDatalist();
+            renderBets();
+
+            document.getElementById('match').value = '';
+            document.getElementById('event').value = '';
+            document.getElementById('odds').value = '';
+
+            try {
+                fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(betData) })
+                .then(() => {
+                    setTimeout(() => refreshData(false), 2000);
+                });
+            } catch (err) {
+                console.error("Ошибка фоновой отправки", err);
+            }
+        };
+
+        window.onload = refreshData;
+    </script>
+</body>
+</html>
