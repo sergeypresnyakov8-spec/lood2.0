@@ -18,7 +18,8 @@
             font-family: 'Montserrat', sans-serif; 
             background-color: #0f172a; 
             color: #f8fafc;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2322c55e' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2322c55e' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4H6zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            padding-bottom: 60px; /* Отступ снизу, чтобы контент не перекрывался прилипшим баннером */
         }
         .yasher-card { 
             background: rgba(30, 41, 59, 0.7); 
@@ -71,6 +72,20 @@
 
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                border-color: rgba(239, 68, 68, 0.8);
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.5), inset 0 0 10px rgba(239, 68, 68, 0.2);
+            }
+            50% {
+                border-color: rgba(234, 179, 8, 1);
+                box-shadow: 0 0 25px rgba(234, 179, 8, 0.8), inset 0 0 15px rgba(234, 179, 8, 0.4);
+            }
+        }
+        .ad-pulsing {
+            animation: pulseGlow 1.2s infinite ease-in-out;
+        }
 
         .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 10px; }
@@ -183,15 +198,41 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Адаптивный рекламный баннер РСЯ -->
-        <div class="mt-8 yasher-card p-4 text-center">
-            <div id="yandex_rtb_R-A-15494483-1"></div>
+    <!-- Фиксированный рекламный блок во всю ширину экрана в самом низу -->
+    <div id="sticky-ad-container" class="fixed bottom-0 left-0 w-full z-50 bg-slate-900/95 backdrop-blur-md border-t border-slate-700/80">
+        <div class="w-full relative">
+            
+            <!-- Заглушка на 100% ширины с крестиком справа -->
+            <div id="ad-placeholder" class="w-full relative py-2 px-4 bg-gradient-to-r from-red-900/50 via-amber-900/50 to-red-900/50 border-t-2 border-b-2 ad-pulsing text-center">
+                <!-- Крестик закрытия (скрыт первые 20 сек) -->
+                <button id="close-ad-btn" onclick="closeStickyAd()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 bg-slate-800/80 hover:bg-red-600 text-slate-300 hover:text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs transition-colors border border-slate-600 z-10" title="Закрыть рекламу">
+                    ✕
+                </button>
+
+                <a href="https://xnxx.com" target="_blank" rel="noopener noreferrer" class="block w-full">
+                    <div class="flex items-center justify-center gap-2">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
+                        <span class="text-[9px] font-black text-amber-400 uppercase tracking-widest drop-shadow-[0_0_6px_rgba(251,191,36,0.8)]">ШОК-НОВОСТЬ! 🔥</span>
+                        <p class="text-[11px] sm:text-xs font-black text-white tracking-wide uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] inline">
+                            Йорген Скворген сделал это... <span class="text-amber-300 underline decoration-red-500">Смотреть онлайн и без регистрации...</span>
+                        </p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- РСЯ контейнер -->
+            <div id="yandex_rtb_R-A-15494483-1" class="w-full text-center"></div>
             <script>
                 window.yaContextCb.push(() => {
                     Ya.Context.AdvManager.render({
                         "blockId": "R-A-15494483-1",
-                        "renderTo": "yandex_rtb_R-A-15494483-1"
+                        "renderTo": "yandex_rtb_R-A-15494483-1",
+                        "onRender": () => {
+                            const placeholder = document.getElementById('ad-placeholder');
+                            if (placeholder) placeholder.style.display = 'none';
+                        }
                     })
                 })
             </script>
@@ -199,6 +240,21 @@
     </div>
 
     <script>
+        // Таймер на 20 секунд для появления крестика закрытия
+        setTimeout(() => {
+            const closeBtn = document.getElementById('close-ad-btn');
+            if (closeBtn) {
+                closeBtn.classList.remove('hidden');
+            }
+        }, 20000); // 20000 мс = 20 секунд
+
+        function closeStickyAd() {
+            const container = document.getElementById('sticky-ad-container');
+            if (container) {
+                container.style.display = 'none';
+            }
+        }
+
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxWwjKCjn8YLK-2MFPqnfJDjb2nI4xGfT5pMf5EXPFBBcwu7vIIgdZOUQfE_5HFv_Ua/exec";
         
         let allBets = [];
@@ -209,7 +265,6 @@
 
         const defaultEvents = ["П1", "П2", "Х", "Тотал Б 1.5", "Тотал Б 2.5", "Тотал М 2.5", "ОЗ - Да", "ОЗ - Нет"];
 
-        // Полноэкранный межстраничный рекламный блок
         function showInterstitialAd() {
             window.yaContextCb.push(() => {
                 Ya.Context.AdvManager.render({
